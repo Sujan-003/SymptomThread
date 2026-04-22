@@ -1,44 +1,39 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import axios from 'axios';
 
 const TRIGGERS_LIST = [
-  'Poor Sleep', 'Dairy', 'Gluten', 'Stress', 'Caffeine',
-  'Dehydration', 'Alcohol', 'Weather Change', 'Screen Time', 'Missed Meal'
+  { id: 'sleep', icon: 'bed', label: 'Poor Sleep' },
+  { id: 'stress', icon: 'psychology', label: 'Stress' },
+  { id: 'diet', icon: 'restaurant', label: 'Diet' },
+  { id: 'weather', icon: 'routine', label: 'Weather' }
 ];
 
 function SymptomForm() {
   const [symptomName, setSymptomName] = useState('');
   const [severity, setSeverity] = useState(5);
   const [selectedTriggers, setSelectedTriggers] = useState([]);
-  const [otherTrigger, setOtherTrigger] = useState('');
   const [notes, setNotes] = useState('');
   const [status, setStatus] = useState(null); // { type: 'success' | 'error', message: '' }
 
-  const handleTriggerChange = (trigger) => {
+  const handleTriggerChange = (triggerLabel) => {
     setSelectedTriggers(prev => 
-      prev.includes(trigger) ? prev.filter(t => t !== trigger) : [...prev, trigger]
+      prev.includes(triggerLabel) ? prev.filter(t => t !== triggerLabel) : [...prev, triggerLabel]
     );
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleSubmit = async () => {
     if (!symptomName.trim()) {
-      setStatus({ type: 'error', message: 'Symptom name is required.' });
+      setStatus({ type: 'error', message: 'Symptom is required.' });
       return;
     }
 
     try {
       setStatus({ type: 'info', message: 'Saving...' });
       
-      const finalTriggers = [...selectedTriggers];
-      if (otherTrigger.trim()) {
-        finalTriggers.push(otherTrigger.trim());
-      }
-
       const payload = {
         symptomName: symptomName.trim(),
         severity: Number(severity),
-        triggers: finalTriggers,
+        triggers: selectedTriggers,
         notes: notes.trim()
       };
 
@@ -50,117 +45,145 @@ function SymptomForm() {
         setSymptomName('');
         setSeverity(5);
         setSelectedTriggers([]);
-        setOtherTrigger('');
         setNotes('');
         
         setTimeout(() => setStatus(null), 3000);
       }
     } catch (error) {
       console.error(error);
-      setStatus({ type: 'error', message: 'Failed to log symptom. Please try again.' });
+      setStatus({ type: 'error', message: 'Failed to log symptom.' });
+      setTimeout(() => setStatus(null), 3000);
     }
   };
 
   return (
-    <div className="glass-panel" style={{ maxWidth: '600px', margin: '0 auto' }}>
-      <h2>Log a Symptom</h2>
-      
-      {status && (
-        <div style={{ 
-          padding: '1rem', 
-          marginBottom: '1rem', 
-          borderRadius: '4px',
-          backgroundColor: status.type === 'success' ? '#065f46' : status.type === 'error' ? '#7f1d1d' : '#1e3a8a',
-          color: 'white'
-        }}>
-          {status.message}
-        </div>
-      )}
-
-      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-        
-        <div>
-          <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>Symptom *</label>
-          <input 
-            type="text" 
-            className="form-control"
-            value={symptomName}
-            onChange={(e) => setSymptomName(e.target.value)}
-            placeholder="e.g. Headache, Nausea, Fatigue..."
-            list="common-symptoms"
-            required
-          />
-          <datalist id="common-symptoms">
-            <option value="Headache" />
-            <option value="Fatigue" />
-            <option value="Nausea" />
-            <option value="Bloating" />
-            <option value="Brain Fog" />
-            <option value="Joint Pain" />
-          </datalist>
-        </div>
-
-        <div>
-          <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>
-            Severity ({severity}/10)
-          </label>
-          <input 
-            type="range" 
-            min="1" max="10" 
-            value={severity}
-            onChange={(e) => setSeverity(e.target.value)}
-            style={{ width: '100%' }}
-          />
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', color: '#94a3b8' }}>
-            <span>Mild (1)</span>
-            <span>Moderate (5)</span>
-            <span>Severe (10)</span>
+    <main className="flex-grow flex items-center justify-center p-container-margin md:p-section-gap max-w-3xl mx-auto w-full mt-4 md:mt-0">
+      <div className="bg-surface-container-lowest rounded-xl shadow-[0_4px_20px_rgba(0,0,0,0.04)] w-full overflow-hidden border border-surface-variant/50">
+        <div className="p-6 md:p-8 space-y-stack-lg">
+          
+          {/* Header */}
+          <div className="text-center">
+            <h2 className="font-display-lg text-display-lg text-on-surface mb-2 hidden md:block">Log a Symptom</h2>
+            <p className="font-body-base text-body-base text-secondary">How are you feeling right now?</p>
           </div>
-        </div>
 
-        <div>
-          <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>Potential Triggers</label>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
-            {TRIGGERS_LIST.map(trigger => (
-              <label key={trigger} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          {status && (
+            <div className={`p-4 rounded-lg text-center font-title-sm text-white ${status.type === 'success' ? 'bg-green-600' : status.type === 'error' ? 'bg-red-600' : 'bg-blue-600'}`}>
+              {status.message}
+            </div>
+          )}
+
+          <form className="space-y-stack-lg">
+            {/* Symptom Dropdown */}
+            <div className="space-y-stack-sm">
+              <label className="block font-title-sm text-title-sm text-on-surface" htmlFor="symptom-select">Symptom</label>
+              <div className="relative">
+                <select 
+                  id="symptom-select"
+                  className="w-full h-14 bg-surface-container-low border border-outline-variant text-on-surface font-body-base text-body-base rounded-lg px-4 appearance-none focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary focus:bg-surface-container-lowest transition-colors cursor-pointer"
+                  value={symptomName}
+                  onChange={(e) => setSymptomName(e.target.value)}
+                >
+                  <option disabled value="">Select a symptom...</option>
+                  <option value="Headache">Headache</option>
+                  <option value="Fatigue">Fatigue</option>
+                  <option value="Nausea">Nausea</option>
+                  <option value="Brain Fog">Brain Fog</option>
+                  <option value="Joint Pain">Joint Pain</option>
+                </select>
+                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-secondary">
+                  <span className="material-symbols-outlined">expand_more</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Severity Slider */}
+            <div className="space-y-stack-sm pt-2">
+              <div className="flex justify-between items-end">
+                <label className="block font-title-sm text-title-sm text-on-surface" htmlFor="severity">Severity</label>
+                <span className="font-body-base text-body-base text-primary font-bold">{severity} / 10</span>
+              </div>
+              <div className="px-2 py-4">
                 <input 
-                  type="checkbox" 
-                  checked={selectedTriggers.includes(trigger)}
-                  onChange={() => handleTriggerChange(trigger)}
+                  type="range" 
+                  id="severity" 
+                  min="1" max="10" 
+                  className="w-full" 
+                  value={severity}
+                  onChange={(e) => setSeverity(e.target.value)}
                 />
-                {trigger}
+              </div>
+              <div className="flex justify-between font-label-caps text-label-caps text-secondary px-1">
+                <span>MILD</span>
+                <span>SEVERE</span>
+              </div>
+            </div>
+
+            {/* Triggers / Tags */}
+            <div className="space-y-stack-sm pt-2">
+              <label className="block font-title-sm text-title-sm text-on-surface">Potential Triggers</label>
+              <div className="flex flex-wrap gap-3">
+                {TRIGGERS_LIST.map(trigger => (
+                  <label key={trigger.id} className="cursor-pointer">
+                    <input 
+                      type="checkbox" 
+                      name="trigger" 
+                      value={trigger.id} 
+                      className="peer sr-only" 
+                      checked={selectedTriggers.includes(trigger.label)}
+                      onChange={() => handleTriggerChange(trigger.label)}
+                    />
+                    <div className="px-4 py-2 rounded-full border border-outline-variant text-on-surface-variant font-body-sm text-body-sm bg-surface-container-low peer-checked:bg-primary-container peer-checked:text-on-primary-container peer-checked:border-primary-container transition-colors select-none flex items-center gap-2">
+                      <span className="material-symbols-outlined" style={{fontSize: '16px'}}>{trigger.icon}</span>
+                      {trigger.label}
+                    </div>
+                  </label>
+                ))}
+                
+                <button type="button" className="px-4 py-2 rounded-full border border-dashed border-outline-variant text-secondary font-body-sm text-body-sm hover:bg-surface-container-low transition-colors flex items-center gap-1">
+                  <span className="material-symbols-outlined" style={{fontSize: '16px'}}>add</span> Add
+                </button>
+              </div>
+            </div>
+
+            {/* Notes */}
+            <div className="space-y-stack-sm pt-2">
+              <label className="block font-title-sm text-title-sm text-on-surface" htmlFor="notes">
+                Additional Notes <span className="text-secondary font-body-sm text-body-sm font-normal">(Optional)</span>
               </label>
-            ))}
-          </div>
-          <div style={{ marginTop: '0.5rem' }}>
-            <label style={{ display: 'block', marginBottom: '0.2rem', fontSize: '0.9rem' }}>Other trigger:</label>
-            <input 
-              type="text" 
-              className="form-control"
-              value={otherTrigger}
-              onChange={(e) => setOtherTrigger(e.target.value)}
-              placeholder="Type custom trigger..."
-            />
-          </div>
+              <textarea 
+                id="notes" 
+                rows="3" 
+                placeholder="Any specific details?"
+                className="w-full bg-surface-container-low border border-outline-variant text-on-surface font-body-base text-body-base rounded-lg p-4 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary focus:bg-surface-container-lowest transition-colors resize-none"
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+              ></textarea>
+            </div>
+
+            {/* Submit Button */}
+            <div className="pt-4">
+              <button 
+                type="button" 
+                onClick={handleSubmit}
+                className="w-full h-12 bg-primary hover:bg-primary/90 text-on-primary font-title-sm text-title-sm rounded-lg flex items-center justify-center gap-2 transition-colors shadow-sm active:scale-[0.98]"
+              >
+                <span className="material-symbols-outlined" style={{fontVariationSettings: "'FILL' 1"}}>check_circle</span>
+                Save Entry
+              </button>
+            </div>
+          </form>
         </div>
 
-        <div>
-          <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>Notes (Optional)</label>
-          <textarea 
-            className="form-control"
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            placeholder="Any additional details..."
-            rows="3"
-          />
+        {/* Footer */}
+        <div className="bg-surface-container border-t border-surface-variant/50 p-4 text-center">
+          <p className="font-label-caps text-label-caps text-secondary flex items-center justify-center gap-1">
+            <span className="material-symbols-outlined" style={{fontSize: '14px'}}>database</span>
+            Source: MongoDB
+          </p>
         </div>
-
-        <button type="submit" className="btn btn-primary" style={{ marginTop: '1rem' }}>
-          Submit Log
-        </button>
-
-      </form>
-    </div>
+      </div>
+    </main>
   );
 }
 
