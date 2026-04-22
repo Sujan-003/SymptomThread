@@ -14,11 +14,41 @@ function SymptomForm() {
   const [selectedTriggers, setSelectedTriggers] = useState([]);
   const [notes, setNotes] = useState('');
   const [status, setStatus] = useState(null); // { type: 'success' | 'error', message: '' }
+  const [customTriggers, setCustomTriggers] = useState([]);
+  const [showAddInput, setShowAddInput] = useState(false);
+  const [newTriggerText, setNewTriggerText] = useState('');
 
   const handleTriggerChange = (triggerLabel) => {
     setSelectedTriggers(prev => 
       prev.includes(triggerLabel) ? prev.filter(t => t !== triggerLabel) : [...prev, triggerLabel]
     );
+  };
+
+  const handleAddCustomTrigger = () => {
+    const trimmed = newTriggerText.trim();
+    if (!trimmed) return;
+    // Avoid exact duplicates (case-insensitive)
+    const exists = [...TRIGGERS_LIST.map(t => t.label), ...customTriggers]
+      .some(l => l.toLowerCase() === trimmed.toLowerCase());
+    if (!exists) {
+      setCustomTriggers(prev => [...prev, trimmed]);
+    }
+    // Auto-select the newly added trigger
+    setSelectedTriggers(prev =>
+      prev.includes(trimmed) ? prev : [...prev, trimmed]
+    );
+    setNewTriggerText('');
+    setShowAddInput(false);
+  };
+
+  const handleAddInputKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleAddCustomTrigger();
+    } else if (e.key === 'Escape') {
+      setNewTriggerText('');
+      setShowAddInput(false);
+    }
   };
 
   const handleSubmit = async () => {
@@ -122,7 +152,7 @@ function SymptomForm() {
             {/* Triggers / Tags */}
             <div className="space-y-stack-sm pt-2">
               <label className="block font-title-sm text-title-sm text-on-surface">Potential Triggers</label>
-              <div className="flex flex-wrap gap-3">
+              <div className="flex flex-wrap gap-3 items-center">
                 {TRIGGERS_LIST.map(trigger => (
                   <label key={trigger.id} className="cursor-pointer">
                     <input 
@@ -139,10 +169,61 @@ function SymptomForm() {
                     </div>
                   </label>
                 ))}
-                
-                <button type="button" className="px-4 py-2 rounded-full border border-dashed border-outline-variant text-secondary font-body-sm text-body-sm hover:bg-surface-container-low transition-colors flex items-center gap-1">
-                  <span className="material-symbols-outlined" style={{fontSize: '16px'}}>add</span> Add
-                </button>
+
+                {/* Custom trigger chips */}
+                {customTriggers.map(ct => (
+                  <label key={ct} className="cursor-pointer">
+                    <input 
+                      type="checkbox"
+                      className="peer sr-only"
+                      checked={selectedTriggers.includes(ct)}
+                      onChange={() => handleTriggerChange(ct)}
+                    />
+                    <div className="px-4 py-2 rounded-full border border-outline-variant text-on-surface-variant font-body-sm text-body-sm bg-surface-container-low peer-checked:bg-primary-container peer-checked:text-on-primary-container peer-checked:border-primary-container transition-colors select-none flex items-center gap-2">
+                      <span className="material-symbols-outlined" style={{fontSize: '16px'}}>label</span>
+                      {ct}
+                    </div>
+                  </label>
+                ))}
+
+                {/* +Add button / inline input */}
+                {showAddInput ? (
+                  <div className="flex items-center gap-1">
+                    <input
+                      autoFocus
+                      type="text"
+                      value={newTriggerText}
+                      onChange={e => setNewTriggerText(e.target.value)}
+                      onKeyDown={handleAddInputKeyDown}
+                      placeholder="e.g. Caffeine"
+                      className="h-9 px-3 rounded-full border border-primary bg-surface-container-lowest text-on-surface font-body-sm text-body-sm focus:outline-none focus:ring-2 focus:ring-primary w-32 transition-all"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleAddCustomTrigger}
+                      className="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center hover:bg-primary/90 transition-colors"
+                      title="Confirm"
+                    >
+                      <span className="material-symbols-outlined" style={{fontSize: '16px'}}>check</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { setNewTriggerText(''); setShowAddInput(false); }}
+                      className="w-8 h-8 rounded-full border border-outline-variant text-secondary flex items-center justify-center hover:bg-surface-container-low transition-colors"
+                      title="Cancel"
+                    >
+                      <span className="material-symbols-outlined" style={{fontSize: '16px'}}>close</span>
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setShowAddInput(true)}
+                    className="px-4 py-2 rounded-full border border-dashed border-outline-variant text-secondary font-body-sm text-body-sm hover:bg-surface-container-low hover:border-primary hover:text-primary transition-colors flex items-center gap-1"
+                  >
+                    <span className="material-symbols-outlined" style={{fontSize: '16px'}}>add</span> Add
+                  </button>
+                )}
               </div>
             </div>
 
